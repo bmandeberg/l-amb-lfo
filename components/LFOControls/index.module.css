@@ -1,0 +1,64 @@
+.lfoControls {
+  display: flex;
+  align-items: center;
+  color: var(--secondary-color);
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--secondary-color);
+}
+
+.lfoControl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 28px;
+  transform: scale(0.65);
+  margin-right: -2px;
+  position: relative;
+}
+
+.lfoControlLabel {
+  margin-top: -4px;
+}
+
+.lfoControlValue {
+  text-align: center;
+  position: absolute;
+  top: 100%;
+  left: 25%;
+  transform: translateX(-50%);
+  font-size: 18px;
+}
+
+.shapeControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -4px;
+  position: relative;
+}
+
+.shapeControl polygon,
+.shapeControl rect {
+  transition: stroke 0.3s ease-in-out;
+}
+
+.rangeControl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 18px;
+  margin-top: -4px;
+  position: relative;
+}
+
+.rangeControlLabel {
+  transition: color 0.3s ease-in-out;
+}
+
+.switchControlLabel {
+  position: absolute;
+  bottom: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+}

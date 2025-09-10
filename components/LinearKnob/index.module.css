@@ -1,0 +1,19 @@
+.knobContainer {
+  position: relative;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.knobContainer path {
+  stroke-linecap: round;
+}
+
+.knobLabel {
+  position: absolute;
+  text-align: center;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}

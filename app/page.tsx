@@ -1,95 +1,102 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
 
-export default function Home() {
+import { useState, useCallback, useEffect } from 'react'
+import Image from 'next/image'
+import * as Tone from 'tone'
+import Explanation from '@/components/Explanation'
+import LFOControls, { MIN_HIGH_FREQ } from '@/components/LFOControls'
+import LFOScope from '@/components/LFOScope'
+import useLFO from '@/hooks/useLFO'
+import { LFOParameters } from '@/tone/createLFO'
+import getNativeContext from '@/util/getNativeContext'
+import styles from './page.module.css'
+
+const lfoDefault: LFOParameters = {
+  frequency: 0.39,
+  dutyCycle: 0.3,
+  shape: 1,
+  latch: 0,
+}
+
+export default function LAMBVoice() {
+  const [initialized, setInitialized] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const [extFreq, setExtFreq] = useState(0.5) // freq for sync
+  const [frequency, setLocalFrequency] = useState<number>(lfoDefault.frequency)
+  const [sync, setSync] = useState(false)
+
+  const {
+    value: lfo1,
+    setFrequency: setLfo1Frequency,
+    setDuty: setLfo1Duty,
+    setShape: setLfo1Shape,
+  } = useLFO(initialized, lfoDefault, false)
+
+  const playStop = useCallback(async () => {
+    if (!initialized) {
+      await Tone.start()
+      setInitialized(true)
+    }
+
+    setPlaying((playing) => {
+      const ctx = getNativeContext()
+      if (!playing) {
+        ctx.resume()
+      } else {
+        ctx.suspend()
+      }
+
+      return !playing
+    })
+  }, [initialized])
+
+  // play/stop on spacebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault() // prevent scrolling
+        playStop()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [playStop])
+
   return (
     <div className={styles.page}>
-      <main className={styles.main}>
+      <div className={styles.content}>
         <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+          className={styles.playStopButton}
+          src={!playing ? '/play.svg' : '/stop.svg'}
+          alt="Play/Stop Button"
+          width={40}
+          height={40}
+          onClick={playStop}
         />
-        <ol>
-          <li>
-            Get started by editing <code>app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+        {frequency < MIN_HIGH_FREQ ? (
+          <LFOScope value={lfo1} />
+        ) : (
+          <p className={styles.frequencyWarning}>
+            Frequency too high for LFO scope 🥲
+            <br />
+            {frequency.toFixed(2)} Hz
+          </p>
+        )}
+        <LFOControls
+          init={lfoDefault}
+          setFrequency={setLfo1Frequency}
+          setLocalFrequency={setLocalFrequency}
+          frequency={frequency}
+          setDutyCycle={setLfo1Duty}
+          setShape={setLfo1Shape}
+          extFreq={extFreq}
+          sync={sync}
+        />
+      </div>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <Explanation />
     </div>
-  );
+  )
 }
