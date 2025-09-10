@@ -37,6 +37,7 @@ export default function LFOControls({
   const [moddedFreq, setModdedFreq] = useState<number>(frequency)
   const [clockDivMultIndex, setClockDivMultIndex] = useState<number>(Math.floor(numClockOptions / 2))
   const clockDivMultRef = useRef<number>(clockDivMultIndex)
+  const [divMultFreq, setDivMultFreq] = useState<number>(frequency)
   const [dutyCycle, setLocalDutyCycle] = useState<number>(init.dutyCycle)
   const [moddedDutyCycle, setModdedDutyCycle] = useState<number>(dutyCycle)
   const [shape, setLocalShape] = useState<boolean>(!!init.shape)
@@ -63,8 +64,9 @@ export default function LFOControls({
     (hzOrClockIndex: number) => {
       if (sync) {
         const clockDivMult = clockDivMultOptions[hzOrClockIndex]
-        const divMultFreq = hzOrClockIndex < numClockOptions / 2 ? extFreq / clockDivMult : extFreq * clockDivMult
-        setFrequency?.current?.(divMultFreq)
+        const divMult = hzOrClockIndex < numClockOptions / 2 ? extFreq / clockDivMult : extFreq * clockDivMult
+        setFrequency?.current?.(divMult)
+        setDivMultFreq(divMult)
       } else {
         setFrequency?.current?.(hzOrClockIndex)
       }
@@ -92,9 +94,9 @@ export default function LFOControls({
 
       lfosPreviouslySunk.current = true
       const clockDivMult = clockDivMultOptions[clockDivMultRef.current]
-      const divMultFreq =
-        clockDivMultRef.current < numClockOptions / 2 ? extFreq / clockDivMult : extFreq * clockDivMult
-      setFrequency?.current?.(divMultFreq)
+      const divMult = clockDivMultRef.current < numClockOptions / 2 ? extFreq / clockDivMult : extFreq * clockDivMult
+      setFrequency?.current?.(divMult)
+      setDivMultFreq(divMult)
     } else if (lfosPreviouslySunk.current) {
       // if switching off sync mode, make frequency position match clockDivMult position as close as possible
       const approxFreq = scaleToRangeOutLog(
@@ -176,7 +178,9 @@ export default function LFOControls({
           />
           <p className={styles.lfoControlValue}>
             {sync
-              ? (clockDivMultIndex < numClockOptions / 2 - 1 ? '÷' : '×') + clockDivMultOptions[moddedFreq]
+              ? (clockDivMultIndex < numClockOptions / 2 - 1 ? '÷' : '×') +
+                clockDivMultOptions[moddedFreq] +
+                ` (${divMultFreq.toFixed(2)} Hz)`
               : moddedFreq.toFixed(2) + ' Hz'}
           </p>
           <p className={styles.lfoControlLabel}>FREQ</p>
@@ -253,6 +257,7 @@ export default function LFOControls({
       minFreq,
       maxFreq,
       setLocalFrequency,
+      divMultFreq,
     ]
   )
 
