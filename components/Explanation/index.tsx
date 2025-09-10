@@ -8,199 +8,159 @@ export default function Explanation() {
       <h3>ABOUT</h3>
 
       <span>
-        This demo represents one &quot;voice&quot; (audio oscillator), which includes the <b>PITCH</b>, <b>WAVE</b>, and{' '}
-        <b>SUB</b> controls. There will be 4 of these voices on the synthesizer, each coming out of one channel of a
-        TAD5142. There are also two global controls that will affect all of the 4 voices - <b>root</b> and <b>scale</b>.
+        This demo represents one &quot;LFO&quot; (low-frequency oscillator), which includes the <b>FREQ</b> (frequency),{' '}
+        <b>DUTY</b> (duty cycle), <b>SHAPE</b> and <b>RANGE</b> controls. There will be 3 of these LFOs on the
+        synthesizer, each coming out of one channel of a MCP4728. Also, the LFOs can sync their frequency to an external
+        clock signal.
       </span>
 
       <h3>CONTROLS</h3>
 
       <span>
-        The <b>PITCH</b> control sets the frequency of the voice. When the <b>scale</b> is set to &quot;free&quot;, the
-        pitch can be adjusted freely from 32.7 Hz (musical note C1) - 1046.5 Hz (musical note C6). When the <b>scale</b>{' '}
-        is set to a specific musical scale, the pitch will snap to the nearest note in that scale (still between C1 and
-        C6).
+        The <b>FREQ</b> control sets the frequency of the LFO. When the <b>RANGE</b> is set to &quot;LO&quot; (low), the{' '}
+        <b>FREQ</b> can be adjusted freely from 0.05 Hz - 10 Hz. When the <b>RANGE</b> is set to &quot;HI&quot; (high),
+        the <b>FREQ</b> can be adjusted freely from 10 Hz - 2000 Hz.
       </span>
 
       <span>
-        The <b>root</b> control &quot;transposes&quot; the pitch of all voices, which means it shifts the pitch by up to
-        11 <a href="https://en.wikipedia.org/wiki/Semitone">musical semitones</a> (half-steps). When <b>scale</b> is set
-        to free, the root is also adjusted freely, but when a specific <b>scale</b> is selected, the root will snap to
-        semitones.
+        The <b>DUTY</b> control sets the duty cycle (symmetry) of the LFO waveform. When <b>SHAPE</b> is set to square,{' '}
+        <b>DUTY</b> controls typical pulse-width modulation. When <b>SHAPE</b> is set to triangle, <b>DUTY</b> adjusts
+        the symmetry of the triangle wave so that it can become a ramp or sawtooth wave.
       </span>
 
       <span>
-        The <b>WAVE</b> control selects the wavetable that the oscillator uses. This control should interpolate between
-        different wavetables, so for example we could have a sawtooth on the left of the knob, and a square wave on the
-        right, and the position of the knob would determine the position of the interpolation between the two. We could
-        also interpolate between more than two wavetables across the range of the knob.
+        The <b>SHAPE</b> control selects between a square wave and a triangle wave for the LFO waveform.
       </span>
 
       <span>
-        The <b>SUB</b> control adjusts the level of the sub-oscillator which is mixed into the main oscillator. This
-        sub-oscillator should be a copy of the main oscillator (always the same <b>WAVE</b>), but it will always be one
-        octave lower in <b>PITCH</b>.
+        The <b>RANGE</b> control selects between low and high ranges for the <b>FREQ</b> control. See the <b>FREQ</b>{' '}
+        description for exact frequency ranges.
+      </span>
+
+      <span>
+        When <b>USE EXTERNAL CLOCK</b> is selected, the <b>FREQ</b> control selects a clock division or multiplication,
+        so that the frequency of the LFO can be set from ÷9 to ×9 of the external clock frequency.
       </span>
 
       <h3>IMPLEMENTATION</h3>
 
+      <span>You can implement this any way you&apos;d like, but I can offer some notes on how I implemented it.</span>
+
       <span>
-        You can implement this any way you&apos;d like, but I can offer some notes based on my JavaScript implementation
-        here.
+        For the <b>FREQ</b> control, don&apos;t forget to use a logarithmic scale. However, when we turn on{' '}
+        <b>USE EXTERNAL CLOCK</b>, we need to use a linear scale for <b>FREQ</b> because it will just be selecting a
+        clock division/multiplication option.
       </span>
 
-      <span>
-        When <b>scale</b> is set to free, the <b>PITCH</b> control can sweep freely between 32.7 Hz (C1) and 1046.5 Hz
-        (C6). In this case, be sure to use a logarithmic range for your <b>PITCH</b> knob, it&apos;s pretty easy to
-        project your knob position logarithmically, let me know if you need any help. In this case, the <b>root</b>{' '}
-        freely transposes the pitch by up to 11 semitones. Here is a function to add this transposition to the frequency
-        that is selected by the <b>PITCH</b> control:
-      </span>
-
-      <div className={styles.codeBlock}>
-        <SyntaxHighlighter language="javascript" style={a11yLight}>
-          {`
-function transposeFrequency(frequency, semitones) {
-  return frequency * Math.pow(2, semitones / 12);
-}
-
-const selectedPitch = 440 // frequency (Hz)
-const root = 4.75 // semitones
-const actualPitch = transposeFrequency(selectedPitch, root) // frequency (Hz)
-            `}
-        </SyntaxHighlighter>
-      </div>
+      <h4>Implementing the LFO</h4>
 
       <span>
-        When <b>scale</b> is set to a specific musical scale, I&apos;m using MIDI note numbers (just integers) to track
-        what pitch I&apos;m playing. For each scale, I construct an array with all the pitches in that scale between C1
-        and C6. The <b>PITCH</b> selects the index of this array. Here is how I populate that array of pitches for each
-        scale:
-      </span>
-
-      <span>
-        First, I define the scales each as an array of numbers, and each number represents the number of semitones above
-        the previous note in the scale:
+        I would recommend computing the LFO value in real time, instead of based on a lookup table. For this demo, here
+        is the function that continuously computes the normalized LFO value:
       </span>
 
       <div className={styles.codeBlock}>
         <SyntaxHighlighter language="javascript" style={a11yLight}>
           {`
-const scales = {
-  chromatic: [1],
-  ionian: [2, 2, 1, 2, 2, 2, 1],
-  dorian: [2, 1, 2, 2, 2, 1, 2],
-  phrygian: [1, 2, 2, 2, 1, 2, 2],
-  lydian: [2, 2, 2, 1, 2, 2, 1],
-  mixolydian: [2, 2, 1, 2, 2, 1, 2],
-  aeolian: [2, 1, 2, 2, 1, 2, 2],
-  locrian: [1, 2, 2, 1, 2, 2, 2],
-  pentatonic: [2, 2, 3, 2, 3],
-  diminished: [2, 1, 2, 1, 2, 1, 2, 1],
-  insen: [1, 2, 2, 1, 2, 2],
-}
-          `}
-        </SyntaxHighlighter>
-      </div>
+process(_inputs, outputs, parameters) {
+  const output = outputs[0][0] // mono
+  const freq = parameters.frequency[0]
+  const duty = parameters.dutyCycle[0]
+  const shape = parameters.shape[0] | 0 // coerce to int 0/1
+  const inc = freq / sampleRate
 
-      <span>So, in order to construct the array of pitches for a specific scale, I use this function:</span>
+  for (let i = 0; i < output.length; i++) {
+    this.phase += inc
+    if (this.phase >= 1) this.phase -= 1
 
-      <div className={styles.codeBlock}>
-        <SyntaxHighlighter language="javascript" style={a11yLight}>
-          {`
-const minPitch = 24 // MIDI note number for C1
-const maxPitch = 84 // MIDI note number for C6
-
-function availablePitches(scale) {
-  let currentPitch = minPitch
-  const scaleIntervals = scales[scale]
-  const pitches = [currentPitch]
-  let scaleIndex = 0
-
-  while (currentPitch < maxPitch) {
-    const nextInterval = scaleIntervals[scaleIndex % scaleIntervals.length]
-    currentPitch += nextInterval
-    if (currentPitch <= maxPitch) {
-      pitches.push(currentPitch)
+    let v
+    if (shape === 0) {
+      // Square / PWM
+      v = this.phase < duty ? 1 : 0
+    } else {
+      // Triangle family
+      if (this.phase < duty) {
+        // Rising section: 0 → 1 over [0, duty)
+        v = this.phase / Math.max(duty, 1e-6)
+      } else {
+        // Falling section: 1 → 0 over [duty, 1)
+        v = 1 - (this.phase - duty) / Math.max(1 - duty, 1e-6)
+      }
     }
-    scaleIndex++
+
+    output[i] = v // this is the final output, between 0 and 1
   }
-
-  return pitches
-}
-          `}
-        </SyntaxHighlighter>
-      </div>
-
-      <span>
-        Then, to determine the actual pitch to play, you can add the <b>root</b> control value (in semitones) to the
-        selected pitch number from the available pitches array.
-      </span>
-
-      <div className={styles.codeBlock}>
-        <SyntaxHighlighter language="javascript" style={a11yLight}>
-          {`
-const root = 4 // Root control value in semitones
-const selectedPitch = availablePitches(scale)[pitchIndex]
-const actualPitch = selectedPitch + root // MIDI note number
-const subOscillatorPitch = actualPitch - 12 // MIDI note number
-            `}
-        </SyntaxHighlighter>
-      </div>
-
-      <span>
-        To get the pitch of the sub-oscillator, you can just subtract 12 from the actual pitch number. This is because
-        there are 12 semitones in an octave.
-      </span>
-
-      <span>
-        Then, you&apos;d have to convert the MIDI note numbers to frequencies in Hz to set the oscillator frequencies.
-      </span>
-
-      <div className={styles.codeBlock}>
-        <SyntaxHighlighter language="javascript" style={a11yLight}>
-          {`
-function midiNoteNumberToFrequency(noteNumber) {
-  return 440 * Math.pow(2, (noteNumber - 69) / 12)
+  return true
 }
             `}
         </SyntaxHighlighter>
       </div>
+
+      <span>
+        For a different example of how I implemented the realtime LFO in my Arduino prototype, you can view the code{' '}
+        <a target="_blank" href="https://github.com/bmandeberg/L-AMB/blob/i2c-quad-dac/LFO.cpp#L30">
+          here on GitHub
+        </a>
+        .
+      </span>
+
+      <h4>Using External Clock</h4>
+
+      <span>
+        There is one external clock input that all 3 LFOs can sync to. Even though this demo uses a knob to set the
+        external clock frequency, on the actual hardware there won&apos;t be a knob, there will just be one digital
+        input pin for the clock input where we can plug in a signal. In my Arduino prototype I used an interrupt input.
+        I simply keep track of the time between input pulses, and that is my external clock frequency. If the time
+        between pulses is more than 20 seconds (0.05 Hz), I don&apos;t sync the LFOs to the external clock. You can see
+        this implemented in my Arduino prototype{' '}
+        <a target="_blank" href="https://github.com/bmandeberg/L-AMB/blob/i2c-quad-dac/L-AMB.ino#L105">
+          here on GitHub
+        </a>
+        .
+      </span>
+
+      <span>
+        When we <b>USE EXTERNAL CLOCK</b>, the LFO <b>FREQ</b> control selects between 17 discrete clock div/mult
+        options across the range of the potentiometer. The options are: ÷9, ÷8, ÷7, ÷6, ÷5, ÷4, ÷3, ÷2, ×1, ×2, ×3, ×4,
+        ×5, ×6, ×7, ×8, ×9. So for example, if the external clock frequency is 1 Hz, and the <b>FREQ</b> control is set
+        to ×2, then the LFO frequency will be 2 Hz.
+      </span>
 
       <h3>PINS</h3>
 
-      <span>All input pins are analog inputs.</span>
-
       <span>
-        • The <b>root</b> control is at Pin Header 3 (PH3) pin 5.
-        <br />• The <b>scale</b> control is at PH3 pin 3.
+        • LFO A <b>FREQ</b> control is at Pin Header 1 (PH1) pin 5 (analog input)
+        <br />• LFO A <b>DUTY</b> control is at PH1 pin 7 (analog input)
+        <br />• LFO A <b>SHAPE</b> control is at PH1 pin 3 (digital input)
+        <br />• LFO A <b>RANGE</b> control is at PH1 pin 1 (digital input)
         <br />
-        <br />• Voice A <b>PITCH</b> control is at PH3 pin 8.
-        <br />• Voice A <b>WAVE</b> control is at PH5 pin 12.
-        <br />• Voice A <b>SUB</b> control is at PH5 pin 14.
+        <br />• LFO B <b>FREQ</b> control is at PH1 pin 6 (analog input)
+        <br />• LFO B <b>DUTY</b> control is at PH1 pin 4 (analog input)
+        <br />• LFO B <b>SHAPE</b> control is at PH1 pin 12 (digital input)
+        <br />• LFO B <b>RANGE</b> control is at PH1 pin 16 (digital input)
         <br />
-        <br />• Voice B <b>PITCH</b> control is at PH3 pin 6.
-        <br />• Voice B <b>WAVE</b> control is at PH5 pin 4.
-        <br />• Voice B <b>SUB</b> control is at PH5 pin 6.
+        <br />• LFO C <b>FREQ</b> control is at PH1 pin 13 (analog input)
+        <br />• LFO C <b>DUTY</b> control is at PH1 pin 15 (analog input)
+        <br />• LFO C <b>SHAPE</b> control is at PH1 pin 9 (digital input)
+        <br />• LFO C <b>RANGE</b> control is at PH1 pin 11 (digital input)
         <br />
-        <br />• Voice C <b>PITCH</b> control is at PH3 pin 4.
-        <br />• Voice C <b>WAVE</b> control is at PH5 pin 11.
-        <br />• Voice C <b>SUB</b> control is at PH5 pin 13.
-        <br />
-        <br />• Voice D <b>PITCH</b> control is at PH3 pin 2.
-        <br />• Voice D <b>WAVE</b> control is at PH5 pin 3.
-        <br />• Voice D <b>SUB</b> control is at PH5 pin 5.
+        <br />• External clock input is at PH3 pin 1 (digital input, interrupt?).
       </span>
 
       <h3>GITHUB</h3>
 
-      <a href="https://github.com/bmandeberg/l-amb-voice">https://github.com/bmandeberg/l-amb-voice</a>
+      <a target="_blank" href="https://github.com/bmandeberg/l-amb-lfo">
+        https://github.com/bmandeberg/l-amb-lfo
+      </a>
 
       <span>
         This example website is a NextJS project, so the main code to check would be at{' '}
-        <a href="https://github.com/bmandeberg/l-amb-voice/blob/main/app/page.tsx">/app/page.tsx</a> and{' '}
-        <a href="https://github.com/bmandeberg/l-amb-voice/blob/main/components/Voice/index.tsx">
-          /components/Voice/index.tsx
+        <a target="_blank" href="https://github.com/bmandeberg/l-amb-lfo/blob/main/app/page.tsx">
+          /app/page.tsx
+        </a>{' '}
+        and{' '}
+        <a target="_blank" href="https://github.com/bmandeberg/l-amb-lfo/blob/main/components/LFOControls/index.tsx">
+          /components/LFOControls/index.tsx
         </a>
       </span>
     </div>

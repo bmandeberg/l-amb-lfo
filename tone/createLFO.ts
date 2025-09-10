@@ -6,14 +6,12 @@ export interface LFOParameters {
   frequency: number
   dutyCycle: number
   shape: 0 | 1 // 0=square, 1=triangle
-  latch?: 0 | 1
 }
 
 export async function createLFO({
   frequency = 1,
   dutyCycle = 0.5,
   shape = 0, // 0=square, 1=triangle
-  latch = 0,
 }: LFOParameters) {
   // Make sure the worklet module is loaded once
   await ensureLFOWorkletLoaded()
@@ -21,7 +19,7 @@ export async function createLFO({
   const node = Tone.getContext().createAudioWorkletNode('custom-lfo', {
     numberOfOutputs: 1,
     outputChannelCount: [1],
-    parameterData: { frequency, dutyCycle, shape, latch },
+    parameterData: { frequency, dutyCycle, shape },
   })
 
   return {
@@ -32,6 +30,5 @@ export async function createLFO({
     setPhase: (phase: number) => {
       node.port.postMessage({ type: 'setPhase', value: phase })
     },
-    setLatch: (latchValue: 0 | 1) => (node.parameters.get('latch')!.value = latchValue),
   }
 }

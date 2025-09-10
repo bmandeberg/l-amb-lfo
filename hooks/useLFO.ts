@@ -3,14 +3,13 @@
 import { useEffect, useState, useRef } from 'react'
 import { createLFO, LFOParameters } from '@/tone/createLFO'
 
-export default function useLFO(initialized: boolean, lfoParams: LFOParameters, latch?: boolean) {
+export default function useLFO(initialized: boolean, lfoParams: LFOParameters) {
   const [value, setValue] = useState(0)
   const setFrequency = useRef<null | ((hz: number) => void)>(null)
   const setDuty = useRef<null | ((d: number) => void)>(null)
   const setShape = useRef<null | ((s: 0 | 1) => void)>(null)
   const setPhase = useRef<null | ((phase: number) => void)>(null)
   const phase = useRef<null | number>(null)
-  const setLatch = useRef<null | ((latchValue: 0 | 1) => void)>(null)
   const [node, setNode] = useState<null | AudioWorkletNode>(null)
 
   useEffect(() => {
@@ -30,7 +29,6 @@ export default function useLFO(initialized: boolean, lfoParams: LFOParameters, l
       setDuty.current = lfoObj.setDuty
       setShape.current = lfoObj.setShape
       setPhase.current = lfoObj.setPhase
-      setLatch.current = lfoObj.setLatch
       setNode(lfoObj.node)
     })()
 
@@ -40,11 +38,6 @@ export default function useLFO(initialized: boolean, lfoParams: LFOParameters, l
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialized])
-
-  useEffect(() => {
-    if (!initialized) return
-    setLatch.current?.(latch ? 1 : 0)
-  }, [initialized, latch])
 
   return { value, setFrequency, setDuty, setShape, phase, setPhase, node }
 }

@@ -17,7 +17,6 @@ const lfoDefault: LFOParameters = {
   frequency: 0.39,
   dutyCycle: 0.3,
   shape: 1,
-  latch: 0,
 }
 
 export default function LAMBVoice() {
@@ -32,7 +31,7 @@ export default function LAMBVoice() {
     setFrequency: setLfo1Frequency,
     setDuty: setLfo1Duty,
     setShape: setLfo1Shape,
-  } = useLFO(initialized, lfoDefault, false)
+  } = useLFO(initialized, lfoDefault)
 
   const playStop = useCallback(async () => {
     if (!initialized) {
