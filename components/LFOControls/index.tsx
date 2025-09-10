@@ -145,7 +145,6 @@ export default function LFOControls({
           rangeHigh ? MIN_HIGH_FREQ : MIN_LOW_FREQ,
           rangeHigh ? MAX_HIGH_FREQ : MAX_LOW_FREQ
         )
-        console.log(rangeHigh, freq, newFreq)
         setFrequency?.current?.(newFreq)
         return newFreq
       })

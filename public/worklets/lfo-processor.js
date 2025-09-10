@@ -2,7 +2,7 @@
 class CustomLFOProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() {
     return [
-      { name: 'frequency', defaultValue: 1, minValue: 0.05, maxValue: 10, automationRate: 'k-rate' },
+      { name: 'frequency', defaultValue: 1, minValue: 0.05, maxValue: 2000, automationRate: 'k-rate' },
       { name: 'dutyCycle', defaultValue: 0.5, minValue: 0.0, maxValue: 1.0, automationRate: 'k-rate' },
       // 0 = square, 1 = triangle family (saw-tri-ramp)
       { name: 'shape', defaultValue: 0, minValue: 0, maxValue: 1, automationRate: 'k-rate' },
