@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, CSSProperties as CSS } from 'react'
 import Image from 'next/image'
 import * as Tone from 'tone'
 import Explanation from '@/components/Explanation'
@@ -66,7 +66,7 @@ export default function LAMBVoice() {
   }, [playStop])
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} style={{ '--secondary-color': secondaryColor, '--gray': gray } as CSS}>
       <div className={styles.content}>
         <Image
           className={styles.playStopButton}
