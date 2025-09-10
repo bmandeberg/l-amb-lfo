@@ -3,14 +3,14 @@ import ReactSwitch from 'react-switch'
 import { LFOParameters } from '@/tone/createLFO'
 import LinearKnob from '@/components/LinearKnob'
 import { gray, secondaryColor } from '@/app/globals'
-import { scaleToRange } from '@/util/math'
+import { scaleToRange, scaleToRangeLog, scaleToRangeOutLog } from '@/util/math'
 import { clockDivMultOptions, numClockOptions } from '@/util/clock'
 import styles from './index.module.css'
 
-const MIN_LOW_FREQ = 0.05
-const MAX_LOW_FREQ = 10
+export const MIN_LOW_FREQ = 0.05
+export const MAX_LOW_FREQ = 10
 export const MIN_HIGH_FREQ = 10
-const MAX_HIGH_FREQ = 2000
+export const MAX_HIGH_FREQ = 2000
 
 interface LFOControlsProps {
   init: LFOParameters
@@ -54,6 +54,11 @@ export default function LFOControls({
     syncRef.current = sync
   }, [sync])
 
+  const rangeHighRef = useRef(rangeHigh)
+  useEffect(() => {
+    rangeHighRef.current = rangeHigh
+  }, [rangeHigh])
+
   const updateFrequency = useCallback(
     (hzOrClockIndex: number) => {
       if (sync) {
@@ -72,16 +77,40 @@ export default function LFOControls({
   const lfosPreviouslySunk = useRef(false)
   useEffect(() => {
     if (sync) {
+      // if switching to sync mode, make clockDivMult position match frequency position as close as possible
+      const approxClockDivMultIndex = Math.round(
+        scaleToRangeLog(
+          frequencyRef.current,
+          rangeHighRef.current ? MIN_HIGH_FREQ : MIN_LOW_FREQ,
+          rangeHighRef.current ? MAX_HIGH_FREQ : MAX_LOW_FREQ,
+          0,
+          numClockOptions - 1
+        )
+      )
+      setClockDivMultIndex(approxClockDivMultIndex)
+      clockDivMultRef.current = approxClockDivMultIndex
+
       lfosPreviouslySunk.current = true
       const clockDivMult = clockDivMultOptions[clockDivMultRef.current]
       const divMultFreq =
         clockDivMultRef.current < numClockOptions / 2 ? extFreq / clockDivMult : extFreq * clockDivMult
       setFrequency?.current?.(divMultFreq)
     } else if (lfosPreviouslySunk.current) {
+      // if switching off sync mode, make frequency position match clockDivMult position as close as possible
+      const approxFreq = scaleToRangeOutLog(
+        clockDivMultRef.current,
+        0,
+        numClockOptions - 1,
+        rangeHighRef.current ? MIN_HIGH_FREQ : MIN_LOW_FREQ,
+        rangeHighRef.current ? MAX_HIGH_FREQ : MAX_LOW_FREQ
+      )
+      setLocalFrequency(approxFreq)
+      frequencyRef.current = approxFreq
+
       setFrequency?.current?.(frequencyRef.current)
       lfosPreviouslySunk.current = false
     }
-  }, [extFreq, sync, setFrequency])
+  }, [extFreq, sync, setFrequency, setLocalFrequency])
 
   const updateDutyCycle = useCallback(
     (d: number) => {

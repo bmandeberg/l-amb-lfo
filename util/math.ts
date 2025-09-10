@@ -17,6 +17,39 @@ export function scaleToRange(num: number, inMin: number, inMax: number, outMin: 
   return ((num - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin
 }
 
+export function scaleToRangeLog(num: number, inMin: number, inMax: number, outMin: number, outMax: number) {
+  if (num <= 0 || inMin <= 0 || inMax <= 0) {
+    throw new Error('Logarithmic scaling requires positive, non-zero values.')
+  }
+
+  // Convert input values to log space
+  const logInMin = Math.log(inMin)
+  const logInMax = Math.log(inMax)
+  const logNum = Math.log(num)
+
+  // Find the percentage along the log-scaled input range
+  const t = (logNum - logInMin) / (logInMax - logInMin)
+
+  // Apply that percentage linearly to the output range
+  return outMin + t * (outMax - outMin)
+}
+
+export function scaleToRangeOutLog(num: number, inMin: number, inMax: number, outMin: number, outMax: number) {
+  if (outMin <= 0 || outMax <= 0) {
+    throw new Error('Logarithmic scaling requires positive, non-zero output range.')
+  }
+
+  // Find linear percentage along input range
+  const t = (num - inMin) / (inMax - inMin)
+
+  // Map to logarithmic output range
+  const logOutMin = Math.log(outMin)
+  const logOutMax = Math.log(outMax)
+  const logValue = logOutMin + t * (logOutMax - logOutMin)
+
+  return Math.exp(logValue)
+}
+
 export function polar(angleDeg: number, radius: number, cx: number, cy: number) {
   const rad = (angleDeg * Math.PI) / 180
   return {

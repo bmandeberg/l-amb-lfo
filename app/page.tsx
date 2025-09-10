@@ -4,10 +4,12 @@ import { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import * as Tone from 'tone'
 import Explanation from '@/components/Explanation'
-import LFOControls, { MIN_HIGH_FREQ } from '@/components/LFOControls'
+import LinearKnob from '@/components/LinearKnob'
+import LFOControls, { MIN_HIGH_FREQ, MIN_LOW_FREQ, MAX_LOW_FREQ } from '@/components/LFOControls'
 import LFOScope from '@/components/LFOScope'
 import useLFO from '@/hooks/useLFO'
 import { LFOParameters } from '@/tone/createLFO'
+import { secondaryColor, gray } from './globals'
 import getNativeContext from '@/util/getNativeContext'
 import styles from './page.module.css'
 
@@ -75,6 +77,7 @@ export default function LAMBVoice() {
           height={40}
           onClick={playStop}
         />
+
         {frequency < MIN_HIGH_FREQ ? (
           <LFOScope value={lfo1} />
         ) : (
@@ -84,6 +87,7 @@ export default function LAMBVoice() {
             {frequency.toFixed(2)} Hz
           </p>
         )}
+
         <LFOControls
           init={lfoDefault}
           setFrequency={setLfo1Frequency}
@@ -94,6 +98,28 @@ export default function LAMBVoice() {
           extFreq={extFreq}
           sync={sync}
         />
+
+        <div className={styles.syncControls}>
+          <div>
+            <input type="checkbox" id="sync" checked={sync} onChange={() => setSync(!sync)} />
+            <label htmlFor="sync">USE EXTERNAL CLOCK</label>
+          </div>
+
+          <div className={styles.syncKnob}>
+            <LinearKnob
+              min={MIN_LOW_FREQ}
+              max={MAX_LOW_FREQ}
+              value={extFreq}
+              onChange={setExtFreq}
+              strokeColor={sync ? secondaryColor : gray}
+              taper="log"
+            />
+          </div>
+
+          <p className={styles.syncFreqValue} style={{ color: sync ? secondaryColor : gray }}>
+            {extFreq.toFixed(2)} Hz
+          </p>
+        </div>
       </div>
 
       <Explanation />
